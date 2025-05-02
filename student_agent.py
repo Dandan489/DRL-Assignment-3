@@ -10,7 +10,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import gym
-from gym.wrappers import FrameStack
 from torchvision import transforms as T
 from gym.spaces import Box
 import numpy as np
@@ -48,6 +47,7 @@ class TransformObservation():
         observation = np.transpose(observation, (2, 0, 1))
         observation = torch.tensor(observation.copy(), dtype=torch.float)
         observation = self.transform(observation).squeeze(0)
+        # observation[:15, :] = 0 #new
         return observation
 
 class QNet(nn.Module):
@@ -189,7 +189,7 @@ class DQNVariant:
         
         self.testing = False
 
-        self.device = torch.device("cpu")
+        self.device = torch.device("cuda")
 
         self.q_net = QNet(action_size).to(self.device)
         self.target_net = QNet(action_size).to(self.device)
@@ -215,8 +215,6 @@ class DQNVariant:
             scale_q = limited_q_values / temp
             action_probs = F.softmax(scale_q, dim=0)
             action = torch.multinomial(action_probs, 1).item() 
-            if(action > 6):
-                print("wtf")
             return action
         
         with torch.no_grad():
@@ -285,11 +283,37 @@ class Agent(object):
         self.action = 0
 
     def act(self, observation):
-        self.transform.observation(observation)
-        self.framestack.add(observation)
         if(self.step % self.skip == 0):
-            state = torch.tensor(np.array(observation).copy(), dtype=torch.float32).unsqueeze(0).to(self.agent.device)
-            q_values = self.agent.q_net(state)
-            self.action = torch.argmax(q_values).item()
+            observation = self.transform.observation(observation)
+            self.framestack.add(observation)
+            state = self.framestack.get()
+            self.action = self.agent.get_action(state)
         self.step += 1
         return self.action
+
+# import time
+# agent = Agent()
+# env = gym_super_mario_bros.make('SuperMarioBros-v0')
+# env = JoypadSpace(env, COMPLEX_MOVEMENT)
+
+# state = env.reset()
+# done = False
+# total_reward = 0
+# step = 0
+# try:
+#     while not done:
+#         action = agent.act(state)
+#         next_state, reward, done, info = env.step(action)
+        
+#         state = next_state
+#         total_reward += reward
+#         step += 1
+        
+#         env.render()
+#         time.sleep(0.01)
+        
+# except KeyboardInterrupt:
+#     env.close()
+
+# env.close()
+# print(f"Evaluation: {total_reward}")
