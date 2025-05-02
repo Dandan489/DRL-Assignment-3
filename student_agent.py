@@ -30,22 +30,8 @@ class FrameStack:
             self.frames.appendleft(self.frames[0])
         return np.stack(self.frames, axis=0)
 
-class SkipFrame(gym.Wrapper):
-    def __init__(self, env, skip):
-        super().__init__(env)
-        self.skip = skip
-
-    def step(self, action):
-        total_reward = 0.0
-        for i in range(self.skip):
-            obs, reward, done, info = self.env.step(action)
-            total_reward += reward
-            if done: break
-        return obs, total_reward, done, info
-
-class TransformObservation(gym.ObservationWrapper):
-    def __init__(self, env, shape):
-        super().__init__(env)
+class TransformObservation():
+    def __init__(self, shape):
         self.shape = (shape, shape)
         self.observation_space = Box(
             low=0, high=255,
@@ -293,7 +279,7 @@ class Agent(object):
         self.agent.q_net.eval()
         
         self.framestack = FrameStack()
-        self.transform = TransformObservation()
+        self.transform = TransformObservation(84)
         self.step = 0
         self.skip = 4
         self.action = 0
