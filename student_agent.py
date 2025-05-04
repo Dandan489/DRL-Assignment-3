@@ -47,7 +47,7 @@ class TransformObservation():
         observation = np.transpose(observation, (2, 0, 1))
         observation = torch.tensor(observation.copy(), dtype=torch.float)
         observation = self.transform(observation).squeeze(0)
-        # observation[:15, :] = 0 #new
+        observation[:15, :] = 0
         return observation
 
 class QNet(nn.Module):
@@ -189,7 +189,7 @@ class DQNVariant:
         
         self.testing = False
 
-        self.device = torch.device("cuda")
+        self.device = torch.device("cpu")
 
         self.q_net = QNet(action_size).to(self.device)
         self.target_net = QNet(action_size).to(self.device)
